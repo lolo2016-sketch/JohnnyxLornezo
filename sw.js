@@ -1,9 +1,10 @@
 // Service Worker: macht die App installierbar und lädt sie auch bei schlechtem Netz.
 // Bei Änderungen an der App die Versionsnummer erhöhen.
-const CACHE = 'zweisam-v1';
+const CACHE = 'zweisam-v2';
 const ASSETS = [
-  './', './index.html', './css/style.css', './js/app.js', './js/util.js', './js/config.js',
-  './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'
+  './', './index.html', './style.css', './app.js', './util.js', './config.js', './manifest.webmanifest',
+  './icon-192.png', './icon-512.png', './apple-touch-icon.png',
+  './foto-1.jpg', './foto-2.jpg', './foto-3.jpg', './foto-4.jpg', './foto-5.jpg', './foto-6.jpg', './foto-7.jpg', './foto-8.jpg'
 ];
 
 self.addEventListener('install', e => {

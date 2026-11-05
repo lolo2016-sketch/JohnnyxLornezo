@@ -143,6 +143,42 @@ legend { font-weight: 800; padding: 0 6px; font-size: .9rem; }
 .or::before, .or::after { content: ''; position: absolute; top: 50%; width: 38%; height: 1px; background: var(--line); }
 .or::before { left: 0; } .or::after { right: 0; }
 
+/* ----- Fotos: Polaroid-Fächer (Login) ----- */
+.fan { position: relative; height: 190px; width: 260px; margin: 0 auto 6px; }
+.fan img {
+  position: absolute; left: 50%; top: 10px; width: 128px; height: 158px; object-fit: cover;
+  border: 7px solid #fff; border-bottom-width: 22px; border-radius: 4px; background: #fff;
+  box-shadow: 0 14px 30px -14px rgba(60, 20, 40, .55);
+  animation: fanIn .7s cubic-bezier(.2, .8, .2, 1) both;
+}
+.fan img:nth-child(1) { transform: translateX(-112%) rotate(-11deg); animation-delay: .05s; }
+.fan img:nth-child(2) { transform: translateX(-50%) rotate(2deg); z-index: 2; top: 0; animation-delay: .15s; }
+.fan img:nth-child(3) { transform: translateX(12%) rotate(10deg); animation-delay: .25s; }
+@keyframes fanIn { from { opacity: 0; translate: 0 18px; } }
+
+/* ----- Fotos: Galerie „Unsere Momente“ ----- */
+.moments-wrap { margin: 0 -16px 16px; }
+.moments-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 20px; margin-bottom: 4px; }
+.moments-head h3 { margin: 0; }
+.moments {
+  display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory;
+  padding: 14px 20px 22px; scrollbar-width: none; scroll-padding: 0 20px;
+}
+.moments::-webkit-scrollbar { display: none; }
+.moment {
+  flex: 0 0 64%; max-width: 280px; scroll-snap-align: start; border: 0; padding: 9px 9px 0;
+  background: #fff; border-radius: 6px; transform: rotate(var(--r)); text-align: center;
+  box-shadow: 0 16px 30px -16px rgba(70, 20, 40, .5); transition: transform .25s;
+}
+.moment:active { transform: rotate(0) scale(.98); }
+.moment img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 2px; background: var(--bg2); }
+.moment span {
+  display: block; padding: 9px 4px 11px; color: #4a3a44; font-size: .9rem; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.photo-view .full-img { max-height: 70vh; object-fit: contain; background: var(--bg2); }
+.photo-cap { text-align: center; font-weight: 800; font-size: 1.1rem; margin: 14px 0 0; }
+
 /* ----- Kopfzeile & Datum ----- */
 .top { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px 16px; }
 .top-left { display: flex; align-items: center; gap: 12px; min-width: 0; }

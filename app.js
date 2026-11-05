@@ -17,7 +17,7 @@ const esc = U.esc;
 
 if (!firebaseConfig || String(firebaseConfig.apiKey).startsWith('DEIN')) {
   $app.innerHTML = `<div class="auth"><div class="card"><h2>Fast fertig 🔧</h2>
-    <p>Trage zuerst deine Firebase-Konfiguration in <code>js/config.js</code> ein – die Anleitung steht in der README.</p></div></div>`;
+    <p>Trage zuerst deine Firebase-Konfiguration in <code>config.js</code> ein – die Anleitung steht in der README.</p></div></div>`;
   throw new Error('Firebase-Konfiguration fehlt');
 }
 
@@ -50,7 +50,20 @@ const METRICS = {
   total: { label: 'Uni + Haushalt', emoji: '⏱️' },
   supps: { label: 'Supplements', emoji: '💊' }
 };
-const DEF_PROFILE = { name: '?', emoji: '🙂', goalUni: 120, goalHome: 30 };
+// Eure Fotos (liegen als foto-1.jpg … im Repo). Bildunterschriften hier einfach ändern.
+const PHOTOS = [
+  { src: 'foto-1.jpg', cap: 'Abende zu zweit ✨' },
+  { src: 'foto-2.jpg', cap: 'Abenteuer im Regen ⛰️' },
+  { src: 'foto-3.jpg', cap: 'Wellness-Abend 💜💚' },
+  { src: 'foto-4.jpg', cap: 'Sommer im Pool ☀️' },
+  { src: 'foto-5.jpg', cap: 'Zwischen Blüten 🌺' },
+  { src: 'foto-6.jpg', cap: 'Ein Küsschen für unterwegs 😘' },
+  { src: 'foto-7.jpg', cap: 'Am Meer 🌊' },
+  { src: 'foto-8.jpg', cap: 'Love Calculator sagt: 100 % ❤️' }
+];
+const photoOfDay = () => Math.floor(Date.now() / 864e5) % PHOTOS.length;
+
+const DEF_PROFILE ={ name: '?', emoji: '🙂', goalUni: 120, goalHome: 30 };
 const prof = u => ({ ...DEF_PROFILE, ...(S.couple?.profiles?.[u] || {}) });
 const goalOf = (u, m) => m === 'uni' ? prof(u).goalUni : m === 'home' ? prof(u).goalHome : prof(u).goalUni + prof(u).goalHome;
 const myName = () => auth.currentUser?.displayName || 'Ich';
@@ -150,7 +163,9 @@ function authMsg(code) {
 function renderAuth(mode) {
   const reg = mode === 'register';
   $app.innerHTML = `<div class="auth">
-    <div class="brand"><img src="icons/icon-192.png" alt=""><h1>Zweisam</h1>
+    <div class="brand">
+      <div class="fan">${[1, 0, 2].map(i => `<img src="${PHOTOS[(photoOfDay() + i) % PHOTOS.length].src}" alt="">`).join('')}</div>
+      <h1>Zweisam</h1>
       <p>Gemeinsam dranbleiben – Uni, Haushalt, Supplements und kleine Belohnungen füreinander.</p></div>
     <form class="card" data-form="auth" data-mode="${mode}">
       ${reg ? '<label>Dein Name<input name="uname" required maxlength="30" autocomplete="given-name"></label>' : ''}
@@ -235,12 +250,14 @@ function saveKeep() {
   document.querySelectorAll('[data-keep]').forEach(el => {
     out[el.id] = { v: el.value, f: document.activeElement === el, s: el.selectionStart };
   });
+  document.querySelectorAll('[data-keep-scroll]').forEach(el => { out[el.id] = { scroll: el.scrollLeft }; });
   return out;
 }
 function restoreKeep(k) {
   for (const id in k) {
     const el = document.getElementById(id);
     if (!el) continue;
+    if ('scroll' in k[id]) { el.scrollLeft = k[id].scroll; continue; }
     el.value = k[id].v;
     if (k[id].f) { el.focus(); try { el.setSelectionRange(k[id].s, k[id].s); } catch { } }
   }
@@ -277,9 +294,22 @@ function renderMain() {
 
 /* ------------------------------------------------------------ Heute */
 function vToday() {
-  return `${dateNav()}${forYou()}${S.partnerUid ? duoCard() : inviteCard()}
+  return `${moments()}${dateNav()}${forYou()}${S.partnerUid ? duoCard() : inviteCard()}
     ${timeCard('uni')}${timeCard('home')}${suppCard()}
     ${S.partnerUid ? partnerCard() : ''}${upcomingRewards()}`;
+}
+
+function moments() {
+  const start = photoOfDay();
+  const order = PHOTOS.map((_, i) => (start + i) % PHOTOS.length);
+  return `<section class="moments-wrap">
+    <div class="moments-head"><h3>📸 Unsere Momente</h3><span class="muted small">wischen →</span></div>
+    <div class="moments" id="moments" data-keep-scroll>
+      ${order.map((i, n) => `<button class="moment" data-a="openPhoto" data-i="${i}" style="--r:${[-2.5, 1.8, -1.2, 2.4, -1.8, 1.2][n % 6]}deg">
+        <img src="${PHOTOS[i].src}" alt="${esc(PHOTOS[i].cap)}" loading="${n < 2 ? 'eager' : 'lazy'}">
+        <span>${esc(PHOTOS[i].cap)}</span></button>`).join('')}
+    </div>
+  </section>`;
 }
 
 function dateNav() {
@@ -532,6 +562,20 @@ function tick() {
 }
 setInterval(tick, 1000);
 
+// Galerie blättert langsam von selbst weiter – pausiert, sobald jemand selbst wischt
+let lastSwipe = 0;
+document.addEventListener('touchstart', e => { if (e.target.closest('.moments')) lastSwipe = Date.now(); }, { passive: true });
+document.addEventListener('wheel', e => { if (e.target.closest('.moments')) lastSwipe = Date.now(); }, { passive: true });
+setInterval(() => {
+  const m = document.getElementById('moments');
+  if (!m || S.modalOpen || document.hidden || Date.now() - lastSwipe < 8000) return;
+  const card = m.querySelector('.moment');
+  if (!card) return;
+  const step = card.offsetWidth + 12;
+  const end = m.scrollLeft + m.clientWidth >= m.scrollWidth - 4;
+  m.scrollTo({ left: end ? 0 : m.scrollLeft + step, behavior: 'smooth' });
+}, 4500);
+
 /* ------------------------------------------------------------ Schreiben */
 function setMinutes(cat, d, value) {
   value = Math.max(0, Math.min(1440, Math.round(value)));
@@ -692,6 +736,17 @@ const actions = {
     W(updateDoc(doc(col('feed'), f.id), { hearts: liked ? arrayRemove(uid()) : arrayUnion(uid()) }));
   },
   delPost(el) { if (confirm('Beitrag löschen?')) W(deleteDoc(doc(col('feed'), el.dataset.id))); },
+  openPhoto(el) {
+    const i = (+el.dataset.i + PHOTOS.length) % PHOTOS.length, ph = PHOTOS[i];
+    openModal(`<div class="photo-view">
+      <img class="full-img" src="${ph.src}" alt="${esc(ph.cap)}">
+      <p class="photo-cap">${esc(ph.cap)}</p>
+      <div class="modal-actions">
+        <button class="btn" data-a="openPhoto" data-i="${i - 1}" aria-label="Vorheriges Foto">‹</button>
+        <button class="btn" data-a="close">Schließen</button>
+        <button class="btn" data-a="openPhoto" data-i="${i + 1}" aria-label="Nächstes Foto">›</button>
+      </div></div>`);
+  },
   openImg(el) {
     const f = S.feed.find(x => x.id === el.dataset.id);
     if (f?.image) openModal(`<img class="full-img" src="${f.image}" alt="">
