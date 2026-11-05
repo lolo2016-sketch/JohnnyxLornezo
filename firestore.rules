@@ -1,0 +1,99 @@
+rules_version = '2';
+
+// Sicherheitsregeln für Zweisam
+// In der Firebase Console unter Firestore Database → Regeln komplett einfügen und „Veröffentlichen“.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function isMember(cid) {
+      return signedIn() && me() in get(/databases/$(database)/documents/couples/$(cid)).data.members;
+    }
+
+    // Jede Person sieht nur ihr eigenes Profil-Dokument (enthält nur den Raum-Code)
+    match /users/{userId} {
+      allow read, write: if signedIn() && me() == userId;
+    }
+
+    match /couples/{cid} {
+      // Einzelnen Raum per Code abrufen (nötig zum Beitreten); Auflisten aller Räume ist verboten
+      allow get: if signedIn();
+      allow list: if false;
+
+      // Raum erstellen: nur mit sich selbst als Mitglied
+      allow create: if signedIn() && request.resource.data.members == [me()];
+
+      allow update: if signedIn() && (
+        // Mitglieder dürfen Profile/Ziele ändern, aber niemanden hinzufügen oder entfernen
+        (me() in resource.data.members && request.resource.data.members == resource.data.members)
+        ||
+        // Beitreten: genau eine zweite Person fügt nur sich selbst hinzu
+        (resource.data.members.size() == 1
+          && !(me() in resource.data.members)
+          && request.resource.data.members == resource.data.members.concat([me()])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'profiles']))
+      );
+      allow delete: if false;
+
+      // Zeiten pro Tag
+      match /logs/{id} {
+        allow read: if isMember(cid);
+        allow create: if isMember(cid) && request.resource.data.uid == me();
+        allow update: if isMember(cid) && resource.data.uid == me() && request.resource.data.uid == me();
+        allow delete: if isMember(cid) && resource.data.uid == me();
+      }
+
+      // Supplement-Liste
+      match /supplements/{id} {
+        allow read: if isMember(cid);
+        allow create: if isMember(cid) && request.resource.data.uid == me();
+        allow update: if isMember(cid) && resource.data.uid == me() && request.resource.data.uid == me();
+        allow delete: if isMember(cid) && resource.data.uid == me();
+      }
+
+      // Abgehakte Supplements pro Tag
+      match /suppLogs/{id} {
+        allow read: if isMember(cid);
+        allow create: if isMember(cid) && request.resource.data.uid == me();
+        allow update: if isMember(cid) && resource.data.uid == me() && request.resource.data.uid == me();
+        allow delete: if isMember(cid) && resource.data.uid == me();
+      }
+
+      // Belohnungen: Titel & Bedingung sehen beide
+      match /rewards/{rid} {
+        allow read: if isMember(cid);
+        allow create: if isMember(cid)
+          && request.resource.data.from == me()
+          && request.resource.data.unlocked == false;
+        allow update: if isMember(cid) && (
+          (resource.data.from == me() && request.resource.data.from == me())
+          ||
+          // Empfänger:in darf nur „freigeschaltet“ / „gesehen“ setzen
+          (resource.data.to == me()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unlocked', 'unlockedAt', 'seen']))
+        );
+        allow delete: if isMember(cid) && resource.data.from == me();
+
+        // Geheimer Inhalt (Text/Bild): erst nach dem Freischalten lesbar
+        match /secret/{sid} {
+          allow read: if isMember(cid) && (
+            resource.data.from == me()
+            || get(/databases/$(database)/documents/couples/$(cid)/rewards/$(rid)).data.unlocked == true
+          );
+          allow create: if isMember(cid) && request.resource.data.from == me();
+          allow update, delete: if isMember(cid) && resource.data.from == me();
+        }
+      }
+
+      // Pinnwand
+      match /feed/{fid} {
+        allow read: if isMember(cid);
+        allow create: if isMember(cid) && request.resource.data.uid == me();
+        // Herzchen darf jedes Mitglied setzen, sonst nichts ändern
+        allow update: if isMember(cid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hearts']);
+        allow delete: if isMember(cid) && resource.data.uid == me();
+      }
+    }
+  }
+}
