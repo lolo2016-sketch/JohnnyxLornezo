@@ -52,14 +52,14 @@ const METRICS = {
 };
 // Eure Fotos (liegen als foto-1.jpg … im Repo). Bildunterschriften hier einfach ändern.
 const PHOTOS = [
-  { src: 'foto-1.jpg', cap: 'Meine' },
-  { src: 'foto-2.jpg', cap: 'Lieblings' },
-  { src: 'foto-3.jpg', cap: 'Mausi' },
-  { src: 'foto-4.jpg', cap: 'die' },
-  { src: 'foto-5.jpg', cap: 'es' },
-  { src: 'foto-6.jpg', cap: 'irgendwo' },
-  { src: 'foto-7.jpg', cap: 'überhaupt' },
-  { src: 'foto-8.jpg', cap: 'gibt' }
+  { src: 'foto-1.jpg', cap: 'Abende zu zweit ✨' },
+  { src: 'foto-2.jpg', cap: 'Abenteuer im Regen ⛰️' },
+  { src: 'foto-3.jpg', cap: 'Wellness-Abend 💜💚' },
+  { src: 'foto-4.jpg', cap: 'Sommer im Pool ☀️' },
+  { src: 'foto-5.jpg', cap: 'Zwischen Blüten 🌺' },
+  { src: 'foto-6.jpg', cap: 'Ein Küsschen für unterwegs 😘' },
+  { src: 'foto-7.jpg', cap: 'Am Meer 🌊' },
+  { src: 'foto-8.jpg', cap: 'Love Calculator sagt: 100 % ❤️' }
 ];
 const photoOfDay = () => Math.floor(Date.now() / 864e5) % PHOTOS.length;
 
@@ -164,7 +164,7 @@ function renderAuth(mode) {
   const reg = mode === 'register';
   $app.innerHTML = `<div class="auth">
     <div class="brand">
-      <div class="fan">${[1, 0, 2].map(i => `<img src="${PHOTOS[(photoOfDay() + i) % PHOTOS.length].src}" alt="">`).join('')}</div>
+      <img class="brand-icon" src="icon-192.png" alt="">
       <h1>Zweisam</h1>
       <p>Gemeinsam dranbleiben – Uni, Haushalt, Supplements und kleine Belohnungen füreinander.</p></div>
     <form class="card" data-form="auth" data-mode="${mode}">
@@ -979,3 +979,4 @@ document.addEventListener('visibilitychange', () => {
 
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.installEvt = e; });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
+
